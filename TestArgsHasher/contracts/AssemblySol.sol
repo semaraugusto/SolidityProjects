@@ -73,7 +73,7 @@ contract AssemblySol {
         uint256[] memory _outputCommitments,
         uint256 _chainId,
         bytes32[] memory _roots
-    ) public view returns(bytes memory, uint256) {
+    ) public view returns(uint256) {
         // bytes memory data = getData(_publicAmount, _extDataHash, _inputNullifiers, _outputCommitments, _chainId, _roots))
         // TODO CALL THROUGH FUNCTION
         // bytes memory data = new bytes(32*6;
@@ -119,7 +119,7 @@ contract AssemblySol {
             }
         }
         uint256 argsHash = uint256(sha256(data)) % SNARK_FIELD;
-        return (data, argsHash);
+        return argsHash;
     }
 
     function verifyInputs(

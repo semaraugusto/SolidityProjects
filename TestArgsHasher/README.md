@@ -16,9 +16,7 @@ This adds complexity to the circuit, as, also for gas optimization purposes (acc
 
 This repo is a simple contract and its respective tests in order to make sure everything is working the same both on chain and on the js/ts side
 
-I'd recomend using the pot12\_final.ptau for testing purposes. It takes a while to calculate the cerimony on 18+ constraints (necessary for the circuit)
-
-Compiling using the pot12\_final.ptau provided is simple. Just run `sh test_circuit_update.sh`. It should generate a proof from the inputs in PublicInput.json and the verifier.sol on the current folder.
+setup circuit by running `sh setup_compile_and_prove`. It´ll generate a contracts/Verifier.sol, but the test will use a hardcoded proof right now. Need to copy calldata manually.
 
 run contract locally using truffle
 
@@ -26,3 +24,4 @@ run contract locally using truffle
 truffle develop
 > test
 ```
+

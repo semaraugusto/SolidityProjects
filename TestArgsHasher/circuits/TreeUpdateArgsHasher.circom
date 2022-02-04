@@ -5,88 +5,110 @@ include "../node_modules/circomlib/circuits/sha256/sha256.circom";
 
 // Computes a SHA256 hash of all inputs packed into a byte array
 // Field elements are padded to 256 bits with zeroes
-template TreeUpdateArgsHasher(nLeaves, nIns, nOuts, length) {
+template TreeUpdateArgsHasher(nIns, nOuts, length) {
     signal input publicAmount;
-    signal input extDataHash;
-    signal input inputNullifier[nIns];
-    signal input outputCommitment[nOuts];
+    signal input extDataHash; // arbitrary
+    signal input inputNullifiers[nIns];
+    signal input outputCommitments[nOuts];
     signal input chainID;
     signal input roots[length];
     signal output out;
 
     component bitsPublicAmount = Num2Bits_strict();
     component bitsExtDataHash = Num2Bits_strict();
-    component bitsInputNullifier[nIns];
-    component bitsOutputCommitment[nOuts];
+    component bitsChainID = Num2Bits_strict();
+    component bitsInputNullifiers[nIns];
+    component bitsOutputCommitments[nOuts];
     component bitsRoots[length];
-
     bitsPublicAmount.in <== publicAmount;
-    bitsExtDataHash.in <== extDataHash;
 
     var index = 0;
-    
-    // header = sizeof(publicAmount) + sizeof(extDataHash) + ... + sizeof(roots)
-    var bitSize = 256 + 256 + 256*nIns + 256*nOuts + 256*length;
-    /* var header = 256 + 256 + 256*nIns + 256*nOuts; */
-    component hasher = Sha256(bitSize);
-
+    var bitsize = 256 + 256 + 256*nIns + 256*nOuts + 256 + 256*length;
+    component hasher = Sha256(bitsize);
     hasher.in[index] <== 0;
     index = index + 1;
     hasher.in[index] <== 0;
     index = index + 1;
+    log(publicAmount);
     for(var i = 0; i < 254; i++) {
         hasher.in[index] <== bitsPublicAmount.out[253 - i];
         index = index + 1;
     }
+
+    bitsExtDataHash.in <== extDataHash;
+
     hasher.in[index] <== 0;
     index = index + 1;
     hasher.in[index] <== 0;
     index = index + 1;
+    log(extDataHash);
     for(var i = 0; i < 254; i++) {
         hasher.in[index] <== bitsExtDataHash.out[253 - i];
         index = index + 1;
     }
-    for(var i = 0; i < nIns; i++) {
-        bitsInputNullifier[i] = Num2Bits_strict();
-        bitsInputNullifier[i].in <== inputNullifier[i];
+    for(var n = 0; n < nIns; n++) {
+        bitsInputNullifiers[n] = Num2Bits_strict();
+        bitsInputNullifiers[n].in <== inputNullifiers[n];
         hasher.in[index] <== 0;
         index = index + 1;
         hasher.in[index] <== 0;
         index = index + 1;
-        for(var b = 0; b < 254; b++) {
-            hasher.in[index] <== bitsInputNullifier[i].out[253 - b];
+        log(inputNullifiers[n]);
+        for(var i = 0; i < 254; i++) {
+            hasher.in[index] <== bitsInputNullifiers[n].out[253 - i];
             index = index + 1;
         }
-    }
-    for(var i = 0; i < nOuts; i++) {
-        bitsOutputCommitment[i] = Num2Bits_strict();
-        bitsOutputCommitment[i].in <== outputCommitment[i];
-        hasher.in[index] <== 0;
-        index = index + 1;
-        hasher.in[index] <== 0;
-        index = index + 1;
-        for(var b = 0; b < 254; b++) {
-            hasher.in[index] <== bitsOutputCommitment[i].out[253 - b];
-            index = index + 1;
-        }
-    }
-    for(var i = 0; i < length; i++) {
-        bitsRoots[i] = Num2Bits_strict();
-        bitsRoots[i].in <== roots[i];
-        hasher.in[index] <== 0;
-        index = index + 1;
-        hasher.in[index] <== 0;
-        index = index + 1;
-        for(var b = 0; b < 254; b++) {
-            hasher.in[index] <== bitsRoots[i].out[253 - b];
-            index = index + 1;
-        }
-    }
-    component b2n = Bits2Num(256);
-    for (var i = 0; i < 256; i++) {
-        b2n.in[i] <== hasher.out[255 - i];
     }
 
+    for(var m = 0; m < nOuts; m++) {
+        bitsOutputCommitments[m] = Num2Bits_strict();
+        bitsOutputCommitments[m].in <== outputCommitments[m];
+        hasher.in[index] <== 0;
+        index = index + 1;
+        hasher.in[index] <== 0;
+        index = index + 1;
+        log(outputCommitments[m]);
+        for(var i = 0; i < 254; i++) {
+            hasher.in[index] <== bitsOutputCommitments[m].out[253 - i];
+            index = index + 1;
+        }
+    }
+    bitsChainID.in <== chainID;
+    hasher.in[index] <== 0;
+    index = index + 1;
+    hasher.in[index] <== 0;
+    index = index + 1;
+    log(chainID);
+    for(var i = 0; i < 254; i++) {
+        hasher.in[index] <== bitsChainID.out[253 - i];
+        index = index + 1;
+    }
+
+    for(var m = 0; m < nOuts; m++) {
+        bitsRoots[m] = Num2Bits_strict();
+        bitsRoots[m].in <== roots[m];
+        hasher.in[index] <== 0;
+        index = index + 1;
+        hasher.in[index] <== 0;
+        index = index + 1;
+        log(roots[m]);
+        for(var i = 0; i < 254; i++) {
+            hasher.in[index] <== bitsRoots[m].out[253 - i];
+            index = index + 1;
+        }
+    }
+
+    component b2n = Bits2Num(256);
+    /* b2n.in[255] <== 0; */
+    /* b2n.in[254] <== 0; */
+    for (var i = 0; i < 256; i++) {
+        /* b2n.in[i] <== bitsPublicAmount.out[253 - i]; */
+        b2n.in[i] <== hasher.out[255 - i];
+        /* b2n.in[i] <== 0; */
+    }
+
+    log(b2n.out);
+   
     out <== b2n.out;
 }
 
